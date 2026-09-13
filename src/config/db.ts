@@ -4,7 +4,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { DB_SHARD1, DB_SHARD2 } from "./env.js";
 
 
-enum ShardId {
+export enum ShardId {
     SHARD_1 = 1,
     SHARD_2 = 2,
 }
