@@ -1,7 +1,7 @@
 import express, { Express } from 'express';
 import { PORT } from './config/env.js';
 import router from './routes/index.js';
-import { closeClients } from './config/db.js';  // ← ye change karo
+import { closeClients } from './config/db.js';  
 import logger from './config/logger.js';
 import { attachCorrelationIdMiddleware } from './middlewares/corelational.js';
 import { errorHandler } from './middlewares/errorHandler.js';
