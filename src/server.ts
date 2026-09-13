@@ -1,11 +1,11 @@
-import express, { Express, NextFunction, Request, Response } from 'express';
+import express, { Express } from 'express';
 import { PORT } from './config/env.js';
 import router from './routes/index.js';
-import connectDB from './config/db.js';
+import { closeClients } from './config/db.js';  // ← ye change karo
 import logger from './config/logger.js';
 import { attachCorrelationIdMiddleware } from './middlewares/corelational.js';
 import { errorHandler } from './middlewares/errorHandler.js';
-import { getCorrelationId } from './utils/requestHelper.js';
+import {connectClients} from './config/db.js';
 
 const app: Express = express();
 
@@ -13,27 +13,24 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(attachCorrelationIdMiddleware);
 
-
-
 app.use('/api', router);
 app.use(errorHandler);
 
 export function startServer() {
-    app.listen(PORT, async () => {
-        try {
-            await connectDB();
-            logger.info('Server started', {
-                port: PORT,
-                correlationId: getCorrelationId(),
-            });
-        } catch (error) {
-            logger.error('Server startup failed', {
-                error,
-                port: PORT,
-                correlationId: getCorrelationId(),
-            });
-            process.exit(1);
-        }
+    const server = app.listen(PORT, async() => {
+        await connectClients();
+
+        logger.info(`Server started on port ${PORT}`);
+    });
+
+    // Graceful shutdown
+    process.on("SIGINT", async () => {
+        logger.info("Shutting down...");
+        await closeClients();  
+        server.close(() => {
+            logger.info("Server closed");
+            process.exit(0);
+        });
     });
 }
 

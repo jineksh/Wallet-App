@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../generated/prisma/shard1"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum LedgerType {
+  CREDIT
+  DEBIT
+}
+
+enum TransactionStatus {
+  PENDING
+  DEBITED
+  CREDITED
+  FAILED
+}
+
+model Wallet {
+  id         BigInt   @id @default(autoincrement()) @db.BigInt
+  user_id    BigInt   @unique @db.BigInt
+  balance    BigInt   @default(0) @db.BigInt
+  version    Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_id])
+  @@map("wallets")
+}
+
+model Transaction {
+  id              BigInt            @id @default(autoincrement()) @db.BigInt
+  from_user       BigInt            @db.BigInt
+  to_user         BigInt            @db.BigInt
+  amount          BigInt            @db.BigInt
+  status          TransactionStatus @default(PENDING)
+  idempotency_key String            @unique @db.VarChar(255)
+  created_at      DateTime          @default(now())
+
+  @@index([from_user], name: "idx_from_user")
+  @@index([to_user], name: "idx_to_user")
+  @@index([status], name: "idx_status")
+  @@index([idempotency_key], name: "idx_idempotency_key")
+  @@map("transactions")
+}
+
+model Ledger {
+  id             BigInt     @id @default(autoincrement()) @db.BigInt
+  user_id        BigInt     @db.BigInt
+  transaction_id BigInt     @db.BigInt
+  amount         BigInt     @db.BigInt
+  type           LedgerType
+  created_at     DateTime   @default(now())
+
+  @@index([user_id], name: "idx_user_id")
+  @@index([transaction_id], name: "idx_transaction_id")
+  @@index([created_at], name: "idx_created_at")
+  @@map("ledger")
+}
