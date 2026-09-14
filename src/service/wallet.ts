@@ -1,12 +1,11 @@
 import { executeInTransaction } from '../utils/txns.js';
-import { getPrismaClient, ShardId } from '../config/db.js';
+import { getPrismaClient } from '../config/db.js';
 import * as walletRepository from '../repository/wallet.js';
 import { conflict, notFound ,badRequest} from '../utils/appError.js';
 import * as ledgerRepository from '../repository/ledger.js';
+import { getShardId } from '../utils/shardReslover.js';
 
-function getShardId(userId: bigint): ShardId {
-    return userId % 2n === 0n ? ShardId.SHARD_1 : ShardId.SHARD_2;
-}
+
 
 export async function createWallet(userId: string) {
 

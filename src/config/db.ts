@@ -2,19 +2,16 @@ import { PrismaClient as Shard1Client } from "../../generated/prisma/shard1/clie
 import { PrismaClient as Shard2Client } from "../../generated/prisma/shard2/client.js";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { DB_SHARD1, DB_SHARD2 } from "./env.js";
+import { ShardId } from "../types/shard.js";
 
 
-export enum ShardId {
-    SHARD_1 = 1,
-    SHARD_2 = 2,
-}
 
 
 // Singleton
 let shard1Client: Shard1Client | null = null;
 let shard2Client: Shard2Client | null = null;
 
-function getShard1Client(): Shard1Client {
+export function getShard1Client(): Shard1Client {
     if (!shard1Client) {
         const adapter = new PrismaPg({
             connectionString: DB_SHARD1
@@ -24,7 +21,7 @@ function getShard1Client(): Shard1Client {
     return shard1Client;
 }
 
-function getShard2Client(): Shard2Client {
+export function getShard2Client(): Shard2Client {
     if (!shard2Client) {
         const adapter = new PrismaPg({
             connectionString: DB_SHARD2
