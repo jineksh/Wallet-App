@@ -8,24 +8,28 @@ function getShardId(userId: bigint): ShardId {
     return userId % 2n === 0n ? ShardId.SHARD_1 : ShardId.SHARD_2;
 }
 
-export async function createWallet(userId: bigint) {
-    const shardId = getShardId(userId);
+export async function createWallet(userId: string) {
+
+    const UserId = BigInt(userId);
+
+    const shardId = getShardId(UserId);
 
     return await executeInTransaction(shardId, async (tx: any) => {
-        const existingWallet = await walletRepository.findByUserId(userId, tx);
+        const existingWallet = await walletRepository.findByUserId(UserId, tx);
         if (existingWallet) {
             throw conflict('Wallet already exists');
         }
 
-        return await walletRepository.createWallet(userId, tx);
+        return await walletRepository.createWallet(UserId, tx);
     });
 }
 
-export async function getWallet(userId: bigint) {
-    const shardId = getShardId(userId);
+export async function getWallet(userId: string) {
+    const UserId = BigInt(userId);
+    const shardId = getShardId(UserId);
     const client = getPrismaClient(shardId);
 
-    const wallet = await walletRepository.findByUserId(userId, client);
+    const wallet = await walletRepository.findByUserId(UserId, client);
     if (!wallet) throw notFound('Wallet not found');
 
     return wallet;

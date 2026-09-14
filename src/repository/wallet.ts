@@ -1,20 +1,27 @@
-export async function createWallet(userId: bigint, tx: any) {
-    return await tx.wallet.create({
+import { Wallet } from '../types/wallet';
+
+export async function createWallet(userId: bigint, tx: any): Promise<Wallet> {
+    const wallet = await tx.wallet.create({
         data: {
             user_id: userId,
             balance: 0,
             version: 1
         }
     });
+
+    return mapToWallet(wallet);
 }
 
-export async function findById(walletId: bigint, client: any) {
-    return await client.wallet.findUnique({
+export async function findById(walletId: bigint, client: any): Promise<Wallet | null> {
+    const wallet = await client.wallet.findUnique({
         where: { id: walletId }
     });
+
+    if (!wallet) return null;
+    return mapToWallet(wallet);
 }
 
-export async function findByUserIdWithLock(userId: bigint, tx: any) {
+export async function findByUserIdWithLock(userId: bigint, tx: any): Promise<Wallet | null> {
     const result = await tx.$queryRaw<Array<{
         id: bigint,
         user_id: bigint,
@@ -29,16 +36,20 @@ export async function findByUserIdWithLock(userId: bigint, tx: any) {
         FOR UPDATE
     `;
 
-    return result[0] ?? null;
+    if (!result[0]) return null;
+    return mapToWallet(result[0]);
 }
 
-export async function findByUserId(userId: bigint, client: any) {
-    return await client.wallet.findUnique({
+export async function findByUserId(userId: bigint, client: any): Promise<Wallet | null> {
+    const wallet = await client.wallet.findUnique({
         where: { user_id: userId }
     });
+
+    if (!wallet) return null;
+    return mapToWallet(wallet);
 }
 
-export async function updateWalletBalance(walletId : bigint, newBalance: bigint, expectedVersion: number, tx: any) {
+export async function updateWalletBalance(walletId: bigint, newBalance: bigint, expectedVersion: number, tx: any): Promise<Wallet | null> {
     const updatedWallet = await tx.wallet.updateMany({
         where: {
             id: walletId,
@@ -55,5 +66,15 @@ export async function updateWalletBalance(walletId : bigint, newBalance: bigint,
     }
 
     return await findById(walletId, tx);
+}
 
+function mapToWallet(wallet: any): Wallet {
+    return {
+        id: wallet.id,
+        userId: wallet.user_id,
+        balance: wallet.balance,
+        version: wallet.version,
+        createdAt: wallet.created_at,
+        updatedAt: wallet.updated_at
+    };
 }

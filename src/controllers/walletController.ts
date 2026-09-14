@@ -11,7 +11,7 @@ export async function createWalletController(req: Request, res: Response, next: 
       throw badRequest('userId is required');
     }
 
-    const wallet = await createWallet(BigInt(userId));
+    const wallet = await createWallet(userId);
     return sendSuccess(res, wallet, 201, 'Wallet created successfully');
   } catch (error) {
     next(error);
@@ -20,13 +20,13 @@ export async function createWalletController(req: Request, res: Response, next: 
 
 export async function getWalletController(req: Request, res: Response, next: NextFunction) {
   try {
-    const { userId } = req.params;
+    const { userId } = req.params;  
 
     if (!userId) {
       throw badRequest('userId is required');
     }
 
-    const wallet = await getWallet(BigInt(userId));
+    const wallet = await getWallet(userId);
     return sendSuccess(res, wallet, 200, 'Wallet fetched successfully');
   } catch (error) {
     next(error);
