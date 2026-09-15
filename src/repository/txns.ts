@@ -17,6 +17,7 @@ export async function createTxns(data: Txns, tx: any): Promise<Txns> {
 }
 
 export async function findTxnsByIdempotencyKey(idempotencyKey: string, tx: any): Promise<Txns | null> {
+    
     const txns = await tx.findFirst({
         where: { idempotency_key: idempotencyKey }
     });

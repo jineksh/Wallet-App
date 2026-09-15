@@ -1,7 +1,9 @@
 export enum TxnStatus {
     PENDING = 'PENDING',
     COMPLETED = 'COMPLETED',
-    FAILED = 'FAILED'
+    FAILED = 'FAILED',
+    DEBITED = 'DEBITED',
+    CREDITED = 'CREDITED'
 }
 
 export interface Txns {

@@ -2,7 +2,7 @@ import { executeInTransaction } from '../utils/txns.js';
 import { getShardId } from '../utils/shardReslover.js';
 import * as txnsRepository from '../repository/txns.js';
 import { TxnStatus } from '../types/txns.js';
-import {getShard1Client, getShard2Client} from '../config/db.js';
+import { getPrismaClient, getShard1Client, getShard2Client } from '../config/db.js';
 
 
 /**
@@ -44,7 +44,7 @@ export async function createTxns(from_user: bigint, to_user: bigint, idempotency
  * determine the shard id based on the from_user and update the transaction status in the corresponding shard
  */
 
-export async function updateTxnsStatus(idempotencyKey: string, status: TxnStatus,from_user: bigint) {
+export async function updateTxnsStatus(idempotencyKey: string, status: TxnStatus, from_user: bigint) {
 
     const shardId = getShardId(from_user);
 
@@ -54,9 +54,24 @@ export async function updateTxnsStatus(idempotencyKey: string, status: TxnStatus
         if (!updatedTxn) {
             throw new Error('Transaction not found');
         }
-        
+
         return updatedTxn;
     });
+
+
+
+}
+
+export async function getTxnsByIdempotency(key: string, userId: bigint) {
+
+    const shardId = getShardId(userId);
+
+    const client = getPrismaClient(shardId);
+
+    const txns = await txnsRepository.findTxnsByIdempotencyKey(key,client);
+
+    return txns;
+
 
 }
 

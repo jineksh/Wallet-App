@@ -1,4 +1,5 @@
-import { getPrismaClient, ShardId } from '../config/db.js';
+import { getPrismaClient} from '../config/db.js';
+import {ShardId} from '../types/shard.js'
 
 export async function executeInTransaction<T>(
     shardId: ShardId,

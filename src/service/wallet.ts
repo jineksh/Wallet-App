@@ -108,7 +108,6 @@ export async function addMoney(
 
 export async function debit(
     userId: bigint,
-    walletId: bigint,
     amount: bigint,
     transactionId: bigint,
     tx: any
@@ -125,7 +124,7 @@ export async function debit(
 
     const newBalance = wallet.balance - amount;
 
-    const updatedWallet = await walletRepository.updateWalletBalance(walletId, newBalance, wallet.version, tx);
+    const updatedWallet = await walletRepository.updateWalletBalance(wallet.id, newBalance, wallet.version, tx);
 
     if (!updatedWallet) throw new Error("Failed to update wallet balance");
 
@@ -143,7 +142,6 @@ export async function debit(
 
 export async function credit(
     userId: bigint,
-    walletId: bigint,
     amount: bigint,
     transactionId: bigint,
     tx: any
@@ -156,7 +154,7 @@ export async function credit(
 
     const newBalance = wallet.balance + amount;
 
-    const updatedWallet = await walletRepository.updateWalletBalance(walletId, newBalance, wallet.version, tx);
+    const updatedWallet = await walletRepository.updateWalletBalance(wallet.id, newBalance, wallet.version, tx);
 
     if (!updatedWallet) throw new Error("Failed to update wallet balance");
 
