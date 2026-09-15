@@ -68,6 +68,9 @@ export async function updateWalletBalance(walletId: bigint, newBalance: bigint, 
     return await findById(walletId, tx);
 }
 
+
+
+
 function mapToWallet(wallet: any): Wallet {
     return {
         id: wallet.id,

@@ -1,7 +1,7 @@
 import { executeInTransaction } from '../utils/txns.js';
 import { getPrismaClient } from '../config/db.js';
 import * as walletRepository from '../repository/wallet.js';
-import { conflict, notFound ,badRequest} from '../utils/appError.js';
+import { conflict, notFound } from '../utils/appError.js';
 import * as ledgerRepository from '../repository/ledger.js';
 import { getShardId } from '../utils/shardReslover.js';
 
@@ -14,7 +14,9 @@ export async function createWallet(userId: string) {
     const shardId = getShardId(UserId);
 
     return await executeInTransaction(shardId, async (tx: any) => {
+
         const existingWallet = await walletRepository.findByUserId(UserId, tx);
+
         if (existingWallet) {
             throw conflict('Wallet already exists');
         }
@@ -25,10 +27,13 @@ export async function createWallet(userId: string) {
 
 export async function getWallet(userId: string) {
     const UserId = BigInt(userId);
+
     const shardId = getShardId(UserId);
+
     const client = getPrismaClient(shardId);
 
     const wallet = await walletRepository.findByUserId(UserId, client);
+
     if (!wallet) throw notFound('Wallet not found');
 
     return wallet;
@@ -42,7 +47,9 @@ export async function updateWalletBalance(
     const shardId = getShardId(userId);
 
     return await executeInTransaction(shardId, async (tx: any) => {
+
         const wallet = await walletRepository.findByUserIdWithLock(userId, tx);
+
         if (!wallet) throw notFound('Wallet not found');
 
         return await walletRepository.updateWalletBalance(
@@ -56,31 +63,31 @@ export async function updateWalletBalance(
 
 
 export async function addMoney(
-    userId : bigint,
-    walletId : bigint,
-    amount : bigint,
-    transactionId : bigint
+    userId: bigint,
+    walletId: bigint,
+    amount: bigint,
+    transactionId: bigint
 
-){
+) {
 
 
     const shardId = getShardId(userId);
 
-    return await executeInTransaction(shardId, async (tx : any)=>{
+    return await executeInTransaction(shardId, async (tx: any) => {
 
         const wallet = await walletRepository.findByUserIdWithLock(userId, tx);
-        if(!wallet) throw notFound('Wallet not found');
+        if (!wallet) throw notFound('Wallet not found');
 
         const newBalance = wallet.balance + amount;
 
-        const updatedWallet =  await walletRepository.updateWalletBalance(
+        const updatedWallet = await walletRepository.updateWalletBalance(
             walletId,
             newBalance,
             wallet.version,
             tx
         );
 
-        if(!updatedWallet) throw new Error('Failed to update wallet balance');
+        if (!updatedWallet) throw new Error('Failed to update wallet balance');
 
         await ledgerRepository.createLedgerEntry(
             userId,
@@ -92,54 +99,74 @@ export async function addMoney(
 
         return updatedWallet;
 
-    
+
 
 
     })
 
 }
 
+export async function debit(
+    userId: bigint,
+    walletId: bigint,
+    amount: bigint,
+    transactionId: bigint,
+    tx: any
+) {
+    const wallet = await walletRepository.findByUserIdWithLock(userId, tx);
 
-export async function deductMoney(
-    userId : bigint,
-    walletId : bigint,
-    amount : bigint,
-    transactionId : bigint
-){
+    if (!wallet) {
+        throw notFound("Wallet not found");
+    }
 
-    const shardId = getShardId(userId);
-     if(amount <= 0n) throw badRequest('Amount must be greater than 0');
+    if (wallet.balance < amount) {
+        throw conflict("Insufficient balance");
+    }
 
-    return await executeInTransaction(shardId, async (tx : any)=>{
+    const newBalance = wallet.balance - amount;
 
-        const wallet = await walletRepository.findByUserIdWithLock(userId, tx);
-        if(!wallet) throw notFound('Wallet not found');
+    const updatedWallet = await walletRepository.updateWalletBalance(walletId, newBalance, wallet.version, tx);
 
-        if(wallet.balance < amount){
-            throw conflict('Insufficient balance');
-        }
+    if (!updatedWallet) throw new Error("Failed to update wallet balance");
 
-        const newBalance = wallet.balance - amount;
+    await ledgerRepository.createLedgerEntry(
+        userId,
+        transactionId,
+        amount,
+        'DEBIT',
+        tx
+    );
 
-        const updatedWallet = await walletRepository.updateWalletBalance(
-            walletId,
-            newBalance,
-            wallet.version,
-            tx
-        );
-
-        if(!updatedWallet) throw new Error('Failed to update wallet balance');
-
-        await ledgerRepository.createLedgerEntry(
-            userId,
-            transactionId,
-            amount,
-            'DEBIT',
-            tx
-        );
-
-        return updatedWallet;
+    return updatedWallet;
+}
 
 
-    })
+export async function credit(
+    userId: bigint,
+    walletId: bigint,
+    amount: bigint,
+    transactionId: bigint,
+    tx: any
+) {
+    const wallet = await walletRepository.findByUserIdWithLock(userId, tx);
+
+    if (!wallet) {
+        throw notFound("Wallet not found");
+    }
+
+    const newBalance = wallet.balance + amount;
+
+    const updatedWallet = await walletRepository.updateWalletBalance(walletId, newBalance, wallet.version, tx);
+
+    if (!updatedWallet) throw new Error("Failed to update wallet balance");
+
+    await ledgerRepository.createLedgerEntry(
+        userId,
+        transactionId,
+        amount,
+        'CREDIT',
+        tx
+    );
+
+    return updatedWallet;
 }
