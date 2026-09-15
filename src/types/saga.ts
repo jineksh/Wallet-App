@@ -14,7 +14,7 @@ type prismaConnectionClient = any;
 
 export interface SagaContext {
 
-    transaction : Txns,
+    transaction?: Txns,
     from_User : bigint,
     to_user : bigint,
     from_user_shard : ShardId,

@@ -3,11 +3,35 @@ import { addMoney, createWallet, getWallet } from '../service/wallet.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { badRequest } from '../utils/appError.js';
 
+function getStringValue(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+
+  if (Array.isArray(value)) {
+    return value[0] ?? undefined;
+  }
+
+  return String(value);
+}
+
+function toBigIntValue(value: unknown, fieldName: string): bigint {
+  const stringValue = getStringValue(value);
+
+  if (stringValue === undefined || stringValue === '') {
+    throw badRequest(`${fieldName} is required`);
+  }
+
+  try {
+    return BigInt(stringValue);
+  } catch {
+    throw badRequest(`${fieldName} must be a valid number`);
+  }
+}
+
 export async function createWalletController(req: Request, res: Response, next: NextFunction) {
   try {
-    const { userId } = req.body ?? {};
+    const userId = getStringValue(req.body?.userId);
 
-    if (userId === undefined || userId === null || userId === '') {
+    if (!userId) {
       throw badRequest('userId is required');
     }
 
@@ -20,7 +44,7 @@ export async function createWalletController(req: Request, res: Response, next: 
 
 export async function getWalletController(req: Request, res: Response, next: NextFunction) {
   try {
-    const { userId } = req.params;  
+    const userId = getStringValue(req.params.userId);
 
     if (!userId) {
       throw badRequest('userId is required');
@@ -35,29 +59,32 @@ export async function getWalletController(req: Request, res: Response, next: Nex
 
 export async function addMoneyController(req: Request, res: Response, next: NextFunction) {
   try {
-    const { userId, walletId, amount, transactionId } = req.body ?? {};
+    const userId = getStringValue(req.body?.userId);
+    const walletId = getStringValue(req.body?.walletId);
+    const amount = getStringValue(req.body?.amount);
+    const transactionId = getStringValue(req.body?.transactionId);
 
-    if (userId === undefined || userId === null || userId === '') {
+    if (!userId) {
       throw badRequest('userId is required');
     }
 
-    if (walletId === undefined || walletId === null || walletId === '') {
+    if (!walletId) {
       throw badRequest('walletId is required');
     }
 
-    if (amount === undefined || amount === null || amount === '') {
+    if (!amount) {
       throw badRequest('amount is required');
     }
 
-    if (transactionId === undefined || transactionId === null || transactionId === '') {
+    if (!transactionId) {
       throw badRequest('transactionId is required');
     }
 
     const wallet = await addMoney(
-      BigInt(userId),
-      BigInt(walletId),
-      BigInt(amount),
-      BigInt(transactionId)
+      toBigIntValue(userId, 'userId'),
+      toBigIntValue(walletId, 'walletId'),
+      toBigIntValue(amount, 'amount'),
+      toBigIntValue(transactionId, 'transactionId')
     );
 
     return sendSuccess(res, wallet, 200, 'Money added successfully');
