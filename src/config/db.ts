@@ -3,6 +3,7 @@ import { PrismaClient as Shard2Client } from "../../generated/prisma/shard2/clie
 import { PrismaPg } from "@prisma/adapter-pg";
 import { DB_SHARD1, DB_SHARD2 } from "./env.js";
 import { ShardId } from "../types/shard.js";
+import logger from "./logger.js";
 
 
 
@@ -38,12 +39,14 @@ export function getPrismaClient(shardId: ShardId) {
 }
 
 export async function connectClients(): Promise<void> {
+    logger.info('Connecting to shard databases');
     await getShard1Client().$connect();
     await getShard2Client().$connect();
-    console.log('All shards connected');
+    logger.info('All shards connected');
 }
 
 export async function closeClients(): Promise<void> {
+    logger.info('Closing shard database connections');
     if (shard1Client) {
         await shard1Client.$disconnect();
         shard1Client = null;
@@ -52,4 +55,5 @@ export async function closeClients(): Promise<void> {
         await shard2Client.$disconnect();
         shard2Client = null;
     }
+    logger.info('Shard database connections closed');
 }

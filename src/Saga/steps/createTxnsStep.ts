@@ -5,6 +5,8 @@ import {
 } from '../../types/saga.js'
 import * as txnsService from '../../service/txns.js'
 import { TxnStatus } from '../../types/txns.js';
+import logger from '../../config/logger.js';
+import { getShardId } from '../../utils/shardReslover.js';
 
 export class CreateTxnsStep implements SagaStep {
 
@@ -17,13 +19,14 @@ export class CreateTxnsStep implements SagaStep {
 
         const exitingTxns = await txnsService.getTxnsByIdempotency(context.idempotencyKey, context.from_User);
 
+
         if (exitingTxns) {
             context.transaction = exitingTxns;
             return context;
         }
 
         const txns = await txnsService.createTxns(context.from_User, context.to_user, context.idempotencyKey, context.amount);
-
+        logger.info('Creating txns on shard', { shardId: getShardId(context.from_User).toString(), from_user: context.from_User.toString() });
         context.transaction = txns;
 
         return context;

@@ -1,6 +1,8 @@
 import { Wallet } from '../types/wallet';
+import logger from '../config/logger.js';
 
 export async function createWallet(userId: bigint, tx: any): Promise<Wallet> {
+    logger.info('Repository: creating wallet record', { userId: userId.toString() });
     const wallet = await tx.wallet.create({
         data: {
             user_id: userId,
@@ -9,19 +11,25 @@ export async function createWallet(userId: bigint, tx: any): Promise<Wallet> {
         }
     });
 
+    logger.info('Repository: wallet record created', { userId: userId.toString(), walletId: wallet.id.toString() });
     return mapToWallet(wallet);
 }
 
 export async function findById(walletId: bigint, client: any): Promise<Wallet | null> {
+    logger.info('Repository: fetching wallet by id', { walletId: walletId.toString() });
     const wallet = await client.wallet.findUnique({
         where: { id: walletId }
     });
 
-    if (!wallet) return null;
+    if (!wallet) {
+        logger.warn('Repository: wallet not found by id', { walletId: walletId.toString() });
+        return null;
+    }
     return mapToWallet(wallet);
 }
 
 export async function findByUserIdWithLock(userId: bigint, tx: any): Promise<Wallet | null> {
+    logger.info('Repository: acquiring wallet row lock', { userId: userId.toString() });
     const result = await tx.$queryRaw<Array<{
         id: bigint,
         user_id: bigint,
@@ -36,20 +44,32 @@ export async function findByUserIdWithLock(userId: bigint, tx: any): Promise<Wal
         FOR UPDATE
     `;
 
-    if (!result[0]) return null;
+    if (!result[0]) {
+        logger.warn('Repository: wallet lock query returned no wallet', { userId: userId.toString() });
+        return null;
+    }
     return mapToWallet(result[0]);
 }
 
 export async function findByUserId(userId: bigint, client: any): Promise<Wallet | null> {
+    logger.info('Repository: fetching wallet by user id', { userId: userId.toString() });
     const wallet = await client.wallet.findUnique({
         where: { user_id: userId }
     });
 
-    if (!wallet) return null;
+    if (!wallet) {
+        logger.warn('Repository: wallet not found by user id', { userId: userId.toString() });
+        return null;
+    }
     return mapToWallet(wallet);
 }
 
 export async function updateWalletBalance(walletId: bigint, newBalance: bigint, expectedVersion: number, tx: any): Promise<Wallet | null> {
+    logger.info('Repository: updating wallet balance', {
+        walletId: walletId.toString(),
+        newBalance: newBalance.toString(),
+        expectedVersion,
+    });
     const updatedWallet = await tx.wallet.updateMany({
         where: {
             id: walletId,
@@ -62,6 +82,10 @@ export async function updateWalletBalance(walletId: bigint, newBalance: bigint, 
     });
 
     if (updatedWallet.count === 0) {
+        logger.error('Repository: wallet balance update failed due to version mismatch or missing wallet', {
+            walletId: walletId.toString(),
+            expectedVersion,
+        });
         throw new Error('Version mismatch or wallet not found');
     }
 

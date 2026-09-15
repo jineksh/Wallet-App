@@ -1,9 +1,16 @@
 import { Txns, TxnStatus } from '../types/txns';
-
+import logger from '../config/logger.js';
 
 
 export async function createTxns(data: Txns, tx: any): Promise<Txns> {
-    const txns = await tx.create({
+    logger.info('Repository: creating transaction record', {
+        senderId: data.senderId.toString(),
+        receiverId: data.receiverId.toString(),
+        idempotencyKey: data.idempotencyKey,
+    });
+
+
+    const txns = await tx.transaction.create({
         data: {
             from_user: data.senderId,
             to_user: data.receiverId,
@@ -13,16 +20,21 @@ export async function createTxns(data: Txns, tx: any): Promise<Txns> {
         }
     });
 
-    return mapToTxns(txns);
+    const mapped = mapToTxns(txns);
+    logger.info('Repository: transaction record created', { idempotencyKey: mapped.idempotencyKey, status: mapped.status });
+    return mapped;
 }
 
-export async function findTxnsByIdempotencyKey(idempotencyKey: string, tx: any): Promise<Txns | null> {
-    
-    const txns = await tx.findFirst({
+export async function findTxnsByIdempotencyKey(idempotencyKey: string, client: any): Promise<Txns | null> {
+    logger.info('Repository: fetching transaction by idempotency key', { idempotencyKey });
+    const txns = await client.transaction.findFirst({
         where: { idempotency_key: idempotencyKey }
     });
 
-    if (!txns) return null;
+    if (!txns) {
+        logger.warn('Repository: transaction not found by idempotency key', { idempotencyKey });
+        return null;
+    }
     return mapToTxns(txns);
 }
 
@@ -31,25 +43,34 @@ export async function updateTxnsStatus(
     status: TxnStatus,
     tx: any
 ): Promise<Txns | null> {
-    const txns = await tx.update({
+    logger.info('Repository: updating transaction status', { idempotencyKey, status });
+    const txns = await tx.transaction.update({
         where: { idempotency_key: idempotencyKey },
         data: { status }
     });
 
-    if (!txns) return null;
+    if (!txns) {
+        logger.warn('Repository: transaction status update produced no result', { idempotencyKey, status });
+        return null;
+    }
     return mapToTxns(txns);
 }
 
 export async function findByTxnId(id: bigint, tx: any): Promise<Txns | null> {
+    logger.info('Repository: fetching transaction by id', { transactionId: id.toString() });
     const txns = await tx.findFirst({
         where: { id }
     });
 
-    if (!txns) return null;
+    if (!txns) {
+        logger.warn('Repository: transaction not found by id', { transactionId: id.toString() });
+        return null;
+    }
     return mapToTxns(txns);
 }
 
 export async function getHistory(userId: bigint, client1: any, client2: any): Promise<Txns[]> {
+    logger.info('Repository: fetching transaction history', { userId: userId.toString() });
     const [txns1, txns2] = await Promise.all([
         client1.findMany({
             where: {
@@ -69,9 +90,12 @@ export async function getHistory(userId: bigint, client1: any, client2: any): Pr
         })
     ]);
 
-    return [...txns1, ...txns2]
+    const result = [...txns1, ...txns2]
         .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .map(mapToTxns);
+
+    logger.info('Repository: transaction history assembled', { userId: userId.toString(), count: result.length });
+    return result;
 }
 
 function mapToTxns(txns: any): Txns {

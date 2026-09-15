@@ -12,7 +12,7 @@ export class UpdateTxnsStatusCreditStep implements SagaStep {
         const updatedTxns = await txnsService.updateTxnsStatus(
             context.idempotencyKey,
             TxnStatus.CREDITED,
-            context.to_user
+            context.from_User
         );
 
         context.transaction = updatedTxns;
@@ -27,6 +27,6 @@ export class UpdateTxnsStatusCreditStep implements SagaStep {
             TxnStatus.PENDING,
             context.to_user
         );
-        
+
     }
 }
