@@ -71,7 +71,7 @@ export async function transfer(req: Request, res: Response, next: NextFunction) 
 
 export async function getTransactionHistoryController(req: Request, res: Response, next: NextFunction) {
     try {
-        const userId = req.query.userId ?? req.query.user_id;
+        const userId = req.params.userId ?? req.query.user_id;
 
         if (userId === undefined || userId === null || userId === '') {
             throw badRequest('userId is required');

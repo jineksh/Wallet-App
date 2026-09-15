@@ -72,7 +72,7 @@ export async function findByTxnId(id: bigint, tx: any): Promise<Txns | null> {
 export async function getHistory(userId: bigint, client1: any, client2: any): Promise<Txns[]> {
     logger.info('Repository: fetching transaction history', { userId: userId.toString() });
     const [txns1, txns2] = await Promise.all([
-        client1.findMany({
+        client1.transaction.findMany({
             where: {
                 OR: [
                     { from_user: userId },
@@ -80,7 +80,7 @@ export async function getHistory(userId: bigint, client1: any, client2: any): Pr
                 ]
             }
         }),
-        client2.findMany({
+        client2.transaction.findMany({
             where: {
                 OR: [
                     { from_user: userId },

@@ -5,7 +5,7 @@ import { idempotentMiddleware } from '../../middlewares/idempotent.js';
 const txnsRouter = Router();
 
 txnsRouter.post('/transfer', idempotentMiddleware, transfer);
-txnsRouter.get('/history', getTransactionHistoryController);
+txnsRouter.get('/history/:userId', getTransactionHistoryController);
 
 txnsRouter.get('/by-key', async (req, res, next) => {
     try {
